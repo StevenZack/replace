@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
-
 	"github.com/StevenZack/tools/strToolkit"
-
 	"github.com/StevenZack/tools/fileToolkit"
 )
 
@@ -20,9 +20,8 @@ var (
 
 func main() {
 	flag.Parse()
-	content, e := fileToolkit.ReadFileAll(*file)
-	if e != nil {
-		fmt.Println("read file error :", e)
+	if *file != "" {
+		handleFile(*file)
 		return
 	}
 	// normal replacement
@@ -37,6 +36,31 @@ func main() {
 func replace(content string) {
 	if len(flag.Args()) < 2 {
 		fmt.Println("not enough args")
+	wd, e := os.Getwd()
+	if e != nil {
+		log.Fatal(e)
+	}
+	e = filepath.Walk(wd, func(path string, f os.FileInfo, e error) error {
+		if f == nil || f.IsDir() {
+			return nil
+		}
+		switch filepath.Ext(f.Name()) {
+		case ".go":
+		default:
+			return nil
+		}
+		handleFile(path)
+		return nil
+	})
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
+func handleFile(path string) {
+	content, e := fileToolkit.ReadFileAll(path)
+	if e != nil {
+		fmt.Println("read file error :", e)
 		return
 	}
 	oldStr := flag.Arg(0)
@@ -48,8 +72,9 @@ func replace(content string) {
 		return
 	}
 	_, e = f.WriteString(newContent)
+	e = fileToolkit.WriteFile(path, []byte(newContent))
 	if e != nil {
-		fmt.Println("write error :", e)
+		fmt.Println(" write file error :", e)
 		return
 	}
 }
