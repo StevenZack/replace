@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"github.com/StevenZack/tools/strToolkit"
+
 	"github.com/StevenZack/tools/fileToolkit"
+	"github.com/StevenZack/tools/strToolkit"
 )
 
 var (
@@ -20,22 +21,27 @@ var (
 
 func main() {
 	flag.Parse()
-	if *file != "" {
-		handleFile(*file)
-		return
-	}
 	// normal replacement
-	if *versionFile == "" {
-		replace(content)
+	if *versionFile != "" {
+		replaceVersion()
 		return
 	}
+	if *file != "" {
+		singleFile(*file)
+		return
+	}
+	replace()
 	// version replacement
-	replaceVersion(content)
 }
 
-func replace(content string) {
+func replace() {
+	content, e := fileToolkit.ReadFileAll(*file)
+	if e != nil {
+		log.Fatal(e)
+	}
 	if len(flag.Args()) < 2 {
 		fmt.Println("not enough args")
+	}
 	wd, e := os.Getwd()
 	if e != nil {
 		log.Fatal(e)
@@ -49,7 +55,7 @@ func replace(content string) {
 		default:
 			return nil
 		}
-		handleFile(path)
+		singleFile(path)
 		return nil
 	})
 	if e != nil {
@@ -57,7 +63,7 @@ func replace(content string) {
 	}
 }
 
-func handleFile(path string) {
+func singleFile(path string) {
 	content, e := fileToolkit.ReadFileAll(path)
 	if e != nil {
 		fmt.Println("read file error :", e)
@@ -79,13 +85,16 @@ func handleFile(path string) {
 	}
 }
 
-func replaceVersion(content string) {
+func replaceVersion() {
+	content, e := fileToolkit.ReadFileAll(*file)
+	if e != nil {
+		log.Fatal(e)
+	}
 	version := readVersion(*versionFile)
 	match := flag.Arg(0)
 	tpl := flag.Arg(1)
 
 	newContent := bytes.NewBufferString("")
-	var e error
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
 		if strings.Contains(line, match) {
