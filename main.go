@@ -35,10 +35,6 @@ func main() {
 }
 
 func replace() {
-	content, e := fileToolkit.ReadFileAll(*file)
-	if e != nil {
-		log.Fatal(e)
-	}
 	if len(flag.Args()) < 2 {
 		fmt.Println("not enough args")
 	}
