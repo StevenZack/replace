@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -60,25 +61,34 @@ func replace() {
 }
 
 func singleFile(path string) {
-	content, e := fileToolkit.ReadFileAll(path)
+	b, e := ioutil.ReadFile(path)
 	if e != nil {
-		fmt.Println("read file error :", e)
-		return
+		log.Fatal(e)
 	}
+
 	oldStr := flag.Arg(0)
 	newStr := flag.Arg(1)
-	newContent := strings.ReplaceAll(content, oldStr, newStr)
-	f, e := fileToolkit.OpenFileForWrite(*file)
-	if e != nil {
-		fmt.Println("open file to write error :", e)
-		return
+
+	out := new(bytes.Buffer)
+	changed := false
+	ss := strings.Split(string(b), "\n")
+	for i, line := range ss {
+		if !changed && strings.Contains(line, oldStr) {
+			out.WriteString(strings.Replace(line, oldStr, newStr, -1))
+		} else {
+			out.WriteString(line)
+		}
+
+		if i < len(ss)-1 {
+			out.WriteString("\n")
+		}
 	}
-	_, e = f.WriteString(newContent)
-	e = fileToolkit.WriteFile(path, []byte(newContent))
+
+	e = ioutil.WriteFile(path, out.Bytes(), 0644)
 	if e != nil {
-		fmt.Println(" write file error :", e)
-		return
+		log.Fatal(e)
 	}
+
 }
 
 func replaceVersion() {
