@@ -73,8 +73,12 @@ func singleFile(path string) {
 	changed := false
 	ss := strings.Split(string(b), "\n")
 	for i, line := range ss {
-		if !changed && strings.Contains(line, oldStr) {
-			out.WriteString(strings.Replace(line, oldStr, newStr, -1))
+		if !changed && (strings.Contains(line, oldStr) || strings.Contains(line, newStr)) {
+			if strings.Contains(line, oldStr) {
+				out.WriteString(strings.Replace(line, oldStr, newStr, -1))
+			} else {
+				out.WriteString(line)
+			}
 			changed = true
 		} else {
 			out.WriteString(line)
